@@ -7,8 +7,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-
-	_ "github.com/mattn/getwild"
 )
 
 func getHash(thePath string) (string, error) {
@@ -35,19 +33,25 @@ func walker(thePath string, info fs.FileInfo, err error) error {
 }
 
 func mains(args []string) error {
-	for _, root := range args {
-		stat, err := os.Stat(root)
+	for _, arg1 := range args {
+		files, err := filepath.Glob(arg1)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			continue
+			files = []string{arg1}
 		}
-		if stat.IsDir() {
-			err = filepath.Walk(root, walker)
-		} else {
-			err = walker(root, stat, nil)
-		}
-		if err != nil {
-			return err
+		for _, root := range files {
+			stat, err := os.Stat(root)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err.Error())
+				continue
+			}
+			if stat.IsDir() {
+				err = filepath.Walk(root, walker)
+			} else {
+				err = walker(root, stat, nil)
+			}
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
