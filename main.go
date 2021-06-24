@@ -12,6 +12,8 @@ import (
 
 var flagNoCr = flag.Bool("nocr", false, "not count CR code")
 
+var flagAll = flag.Bool("a", false, "do not ignore dot files")
+
 func getHash(thePath string) (string, error) {
 	h := md5.New()
 	fd, err := os.Open(thePath)
@@ -40,6 +42,14 @@ func getHash(thePath string) (string, error) {
 }
 
 func walker(thePath string, info fs.FileInfo, err error) error {
+	name := info.Name()
+	if len(name) >= 2 && name[0] == '.' && !*flagAll {
+		if info.IsDir() {
+			return filepath.SkipDir
+		} else {
+			return nil
+		}
+	}
 	if info.IsDir() {
 		return nil
 	}
@@ -63,12 +73,15 @@ func mains(args []string) error {
 				fmt.Fprintln(os.Stderr, err.Error())
 				continue
 			}
+			if name := stat.Name(); len(name) >= 2 && name[0] == '.' && !*flagAll {
+				continue
+			}
 			if stat.IsDir() {
 				err = filepath.Walk(root, walker)
 			} else {
 				err = walker(root, stat, nil)
 			}
-			if err != nil {
+			if err != nil && err != filepath.SkipDir {
 				return err
 			}
 		}
