@@ -2,12 +2,15 @@ package main
 
 import (
 	"crypto/md5"
+	"flag"
 	"fmt"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 )
+
+var flagNoCr = flag.Bool("nocr", false, "not count CR code")
 
 func getHash(thePath string) (string, error) {
 	h := md5.New()
@@ -16,7 +19,23 @@ func getHash(thePath string) (string, error) {
 		return "", err
 	}
 	defer fd.Close()
-	io.Copy(h, fd)
+
+	if *flagNoCr {
+		var buffer [1024]byte
+		for {
+			n, err := fd.Read(buffer[:])
+			for i := 0; i < n; i++ {
+				if buffer[i] != '\r' {
+					h.Write([]byte{buffer[i]})
+				}
+			}
+			if err != nil {
+				break
+			}
+		}
+	} else {
+		io.Copy(h, fd)
+	}
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
@@ -58,7 +77,8 @@ func mains(args []string) error {
 }
 
 func main() {
-	if err := mains(os.Args[1:]); err != nil {
+	flag.Parse()
+	if err := mains(flag.Args()); err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
