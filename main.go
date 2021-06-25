@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 var flagNoCr = flag.Bool("nocr", false, "not count CR code")
@@ -62,6 +63,9 @@ func walker(thePath string, info fs.FileInfo, err error) error {
 }
 
 func mains(args []string) error {
+	if wd, err := os.Getwd(); err == nil {
+		fmt.Printf("# chdir \"%s\" ; \"%s\"\n", wd, strings.Join(os.Args, `" "`))
+	}
 	for _, arg1 := range args {
 		files, err := filepath.Glob(arg1)
 		if err != nil {
