@@ -15,6 +15,23 @@ var flagNoCr = flag.Bool("nocr", false, "not count CR code")
 
 var flagAll = flag.Bool("a", false, "do not ignore dot files")
 
+var flagPattern = flag.String("p", "", "filename pattern")
+
+var patterns []string = nil
+
+func checkPatterns(name string) bool {
+	if patterns == nil || len(patterns) == 0 {
+		return true
+	}
+	for _, pattern1 := range patterns {
+		matched, err := filepath.Match(pattern1, name)
+		if err == nil && matched {
+			return true
+		}
+	}
+	return false
+}
+
 func getHash(thePath string) (string, error) {
 	h := md5.New()
 	fd, err := os.Open(thePath)
@@ -54,6 +71,9 @@ func walker(thePath string, info fs.FileInfo, err error) error {
 	if info.IsDir() {
 		return nil
 	}
+	if !checkPatterns(name) {
+		return nil
+	}
 	sum, err := getHash(thePath)
 	if err != nil {
 		return err
@@ -66,6 +86,11 @@ func mains(args []string) error {
 	if wd, err := os.Getwd(); err == nil {
 		fmt.Printf("# chdir \"%s\" ; \"%s\"\n", wd, strings.Join(os.Args, `" "`))
 	}
+
+	if *flagPattern != "" {
+		patterns = strings.Split(*flagPattern, ",")
+	}
+
 	for _, arg1 := range args {
 		files, err := filepath.Glob(arg1)
 		if err != nil {
