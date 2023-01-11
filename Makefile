@@ -26,3 +26,6 @@ package:
 
 test:
 	go test -v
+
+manifest:
+	make-scoop-manifest *-windows-*.zip > $(NAME).json
